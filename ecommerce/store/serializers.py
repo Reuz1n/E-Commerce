@@ -1,7 +1,8 @@
 # store/serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import CartItem, Cart, Product, Order  # Asegúrate de que existan estos modelos
+from .models import CartItem, Cart, Product, Order  
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,14 +20,15 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'price']
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)  # Incluye detalles del producto
-    product_id = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(), source='product', write_only=True
-    )
-
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'product_id', 'quantity', 'cart']
+        fields = ['cart', 'product', 'quantity']
+
+    def validate(self, data):
+        # Verifica si el `cart` es válido
+        if not Cart.objects.filter(id=data['cart'].id).exists():
+            raise serializers.ValidationError("Invalid cart ID")
+        return data
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)  # Incluye los items del carrito

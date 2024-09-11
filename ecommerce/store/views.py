@@ -9,8 +9,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from .models import Cart, CartItem, Order
-from .serializers import UserSerializer, CartSerializer, CartItemSerializer, OrderSerializer
+from .models import Cart, CartItem, Order, Product
+from .serializers import UserSerializer, CartSerializer, CartItemSerializer, OrderSerializer, ProductSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -33,14 +33,19 @@ class CartView(generics.RetrieveAPIView):
         return cart
 
 class CartItemCreateAPIView(generics.CreateAPIView):
+    queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Asociar el item con el carrito del usuario autenticado
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        user = self.request.user
+        # Asegúrate de que el usuario esté autenticado
+        if not user.is_authenticated:
+            raise ValueError("User must be authenticated")
+        # Asumiendo que tienes un campo `user` en el modelo `Cart`
+        cart = Cart.objects.get(user=user)  # Obtén el carrito del usuario
         serializer.save(cart=cart)
-
+        
 class CartItemDeleteView(generics.DestroyAPIView):
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
@@ -111,3 +116,8 @@ class ExampleView(APIView):
 
     def get(self, request, *args, **kwargs):
         return Response({"message": "Acceso autorizado"})
+
+class ProductCreateView(generics.CreateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
