@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Application definition
 SIMPLE_JWT = {
@@ -59,15 +61,13 @@ REST_FRAMEWORK = {
 }
 
 INSTALLED_APPS = [
+    'store', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',  
-    'store',
 ]
 
 MIDDLEWARE = [
@@ -130,6 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'store.User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

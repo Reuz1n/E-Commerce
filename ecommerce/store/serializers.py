@@ -22,13 +22,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
-        fields = ['cart', 'product', 'quantity']
-
-    def validate(self, data):
-        # Verifica si el `cart` es válido
-        if not Cart.objects.filter(id=data['cart'].id).exists():
-            raise serializers.ValidationError("Invalid cart ID")
-        return data
+        fields = ['id', 'product', 'quantity']
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)  # Incluye los items del carrito

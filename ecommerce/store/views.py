@@ -8,20 +8,37 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model, login
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import AuthenticationForm
 from .models import Cart, CartItem, Order, Product
-from .serializers import UserSerializer, CartSerializer, CartItemSerializer, OrderSerializer, ProductSerializer
+from .serializers import UserSerializer, CartSerializer, CartItemSerializer, OrderSerializer, ProductSerializer, serializers
+from .forms import CustomUserCreationForm
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = (AllowAny,)
-    serializer_class = UserSerializer
+User = get_user_model()
 
-    def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise ValidationError({'username': 'A user with that username already exists.'})
-        return super().post(request, *args, **kwargs)
+
+def register(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Iniciar sesión automáticamente después del registro
+            return redirect('home')  # Redirige a la página de inicio o a otra página
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'store/register.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')  # Redirige a la página de inicio o a otra página
+    else:
+        form = AuthenticationForm()
+    return render(request, 'store/login.html', {'form': form})
 
 class CartView(generics.RetrieveAPIView):
     serializer_class = CartSerializer
@@ -33,17 +50,14 @@ class CartView(generics.RetrieveAPIView):
         return cart
 
 class CartItemCreateAPIView(generics.CreateAPIView):
-    queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         user = self.request.user
-        # Asegúrate de que el usuario esté autenticado
-        if not user.is_authenticated:
-            raise ValueError("User must be authenticated")
-        # Asumiendo que tienes un campo `user` en el modelo `Cart`
-        cart = Cart.objects.get(user=user)  # Obtén el carrito del usuario
+        # Obtén o crea el carrito para el usuario autenticado
+        cart, created = Cart.objects.get_or_create(user=user)
+        # Guarda el CartItem con el carrito asociado
         serializer.save(cart=cart)
         
 class CartItemDeleteView(generics.DestroyAPIView):
@@ -56,30 +70,45 @@ class CartItemDeleteView(generics.DestroyAPIView):
         cart = Cart.objects.get(user=self.request.user)
         return self.queryset.filter(cart=cart)
 
+class CartListView(generics.ListAPIView):
+    serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            cart = Cart.objects.get(user=user)
+        except Cart.DoesNotExist:
+            return CartItem.objects.none()  # Retorna un queryset vacío si no hay carrito
+
+        return CartItem.objects.filter(cart=cart)
+
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        # Obtener el carrito del usuario
-        cart = Cart.objects.get(user=request.user)
+        # Obtener el carrito del usuario autenticado
+        try:
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            return Response({"error": "Cart does not exist for this user."}, status=status.HTTP_400_BAD_REQUEST)
+
         items = cart.items.all()
         
         if not items:
             return Response({"error": "Your cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calcular el total
         total_amount = sum(item.product.price * item.quantity for item in items)
 
-        # Crear una orden
+        # Crear una orden con el usuario autenticado
         order = Order.objects.create(user=request.user, total_amount=total_amount)
 
         # Simular respuesta de pago exitosa
         mock_response = {
-            'client_secret': 'mock_client_secret_12345',  # Valor estático simulado
+            'client_secret': 'mock_client_secret_12345',
             'status': 'success'
         }
 
-        # Marcar la orden como pagada (simulado)
         order.is_paid = True
         order.save()
 
@@ -121,3 +150,11 @@ class ProductCreateView(generics.CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
+
+class ProductDetailView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+class ProductListView(generics.ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
