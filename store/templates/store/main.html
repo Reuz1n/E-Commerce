@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'store/css/styles.css' %}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'store:home' %}">
+                <i class="fas fa-shopping-cart me-2"></i>E-Commerce
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'store:product_create' %}">Crear Producto</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'store:cart' %}">Carrito</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'store:home' %}">Inicio de sesión</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <main class="container py-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-4">Bienvenido a la Tienda E-Commerce</h1>
+                <p class="lead mb-4">Explora nuestros productos y disfruta de una experiencia de compra moderna y sencilla.</p>
+                <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg me-2"><i class="fas fa-shopping-bag me-2"></i>Ver Productos</a>
+                <a href="{% url 'store:cart' %}" class="btn btn-outline-primary btn-lg"><i class="fas fa-shopping-cart me-2"></i>Ver Carrito</a>
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-6 offset-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Tu Carrito</h5>
+                        {% if cart.items %}
+                            <ul class="list-group mb-3">
+                                {% for item in cart.items %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><strong>{{ item.product.name }}</strong> (x{{ item.quantity }})</span>
+                                        <span class="badge bg-success">${{ item.product.price }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <p class="fw-bold">Total: ${{ cart.total }}</p>
+                            <a href="{% url 'store:checkout' %}" class="btn btn-success w-100"><i class="fas fa-credit-card me-2"></i>Finalizar Compra</a>
+                        {% else %}
+                            <div class="alert alert-info text-center mb-0">Tu carrito está vacío.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-shopping-cart me-2"></i>E-Commerce</h5>
+                    <p class="mb-0">Tu tienda online de confianza</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">&copy; 2024 E-Commerce. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
